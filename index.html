@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BankKu - Sistem Antrean</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            🏦 <span>BankKu</span>
+        </div>
+        <div class="clock" id="clock">00:00:00</div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>Sistem Antrean Bank</h1>
+            <p>Silakan pilih layanan yang Anda butuhkan</p>
+        </section>
+
+        <section class="queue-container">
+
+            <div class="card service-card">
+                <h2>🎫 Ambil Nomor Antrean</h2>
+
+                <label for="service">Pilih Layanan</label>
+                <select id="service">
+                    <option value="T">Teller</option>
+                    <option value="CS">Customer Service</option>
+                </select>
+
+                <button class="btn primary" onclick="ambilTiket()">
+                    Ambil Tiket
+                </button>
+
+                <div id="ticketResult" class="ticket-result">
+                    <p>Nomor Anda</p>
+                    <strong id="ticketNumber">-</strong>
+                </div>
+            </div>
+
+            <div class="card display-card">
+                <h2>📢 Antrean Saat Ini</h2>
+
+                <div class="current-number" id="currentNumber">
+                    T-000
+                </div>
+
+                <p id="currentService">Silakan menunggu panggilan</p>
+
+                <button class="btn next" onclick="panggilBerikutnya()">
+                    Panggil Berikutnya
+                </button>
+            </div>
+
+        </section>
+
+        <section class="info">
+            <div>
+                <span>👥</span>
+                <h3>Total Antrean</h3>
+                <p id="totalQueue">0</p>
+            </div>
+
+            <div>
+                <span>🏦</span>
+                <h3>Layanan</h3>
+                <p>Teller & CS</p>
+            </div>
+
+            <div>
+                <span>⏰</span>
+                <h3>Jam Operasional</h3>
+                <p>08:00 - 15:00</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2026 BankKu - Sistem Ticket Antrean Bank</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>l 
