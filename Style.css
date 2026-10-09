@@ -1,0 +1,312 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f7fb;
+  color: #172033;
+}
+
+/* HEADER */
+header {
+  width: 100%;
+  padding: 20px 8%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+  color: #0757a0;
+}
+
+nav {
+  display: flex;
+  gap: 25px;
+}
+
+nav a {
+  text-decoration: none;
+  color: #172033;
+  font-weight: 600;
+}
+
+nav a:hover {
+  color: #0878d1;
+}
+
+/* HERO */
+.hero {
+  min-height: 600px;
+  padding: 80px 8%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 50px;
+  background: linear-gradient(135deg, #e9f5ff, #ffffff);
+}
+
+.hero-text {
+  max-width: 600px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 8px 15px;
+  border-radius: 20px;
+  background: #d8edff;
+  color: #0757a0;
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.hero h1 {
+  font-size: 55px;
+  line-height: 1.1;
+  margin-bottom: 20px;
+  color: #092b4c;
+}
+
+.hero p {
+  font-size: 18px;
+  line-height: 1.7;
+  margin-bottom: 30px;
+  color: #586579;
+}
+
+/* BUTTON */
+.btn {
+  display: inline-block;
+  border: none;
+  cursor: pointer;
+  padding: 15px 25px;
+  border-radius: 10px;
+  background: #0878d1;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.btn:hover {
+  background: #055a9f;
+  transform: translateY(-2px);
+}
+
+.full {
+  width: 100%;
+}
+
+/* HERO CARD */
+.hero-card {
+  width: 330px;
+  padding: 45px 30px;
+  text-align: center;
+  border-radius: 25px;
+  background: white;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+}
+
+.hero-card p {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+#currentNumber {
+  font-size: 70px;
+  font-weight: bold;
+  color: #0878d1;
+  margin: 15px 0;
+}
+
+.hero-card span {
+  color: #6b7280;
+}
+
+/* SECTION */
+.ticket-section,
+.queue-section {
+  padding: 80px 8%;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 35px;
+}
+
+.section-title span {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #0878d1;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+
+.section-title h2 {
+  font-size: 32px;
+}
+
+/* TICKET CONTAINER */
+.ticket-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+/* FORM */
+form {
+  background: white;
+  padding: 35px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 15px;
+  border: 1px solid #d8dee8;
+  border-radius: 9px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: #0878d1;
+}
+
+/* TICKET */
+.ticket {
+  background: white;
+  padding: 40px;
+  text-align: center;
+  border-radius: 20px;
+  border: 2px dashed #0878d1;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+}
+
+.ticket-title {
+  color: #6b7280;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.ticket-number {
+  font-size: 65px;
+  font-weight: bold;
+  color: #0878d1;
+  margin: 20px 0;
+}
+
+#ticketName {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+#ticketService {
+  color: #6b7280;
+}
+
+.ticket-line {
+  border-top: 1px dashed #aaa;
+  margin: 25px 0;
+}
+
+.ticket small {
+  color: #6b7280;
+}
+
+/* QUEUE */
+.queue-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+}
+
+.queue-header,
+.queue-item {
+  display: grid;
+  grid-template-columns: 1fr 2fr 2fr 1fr;
+  gap: 10px;
+  padding: 18px 25px;
+  align-items: center;
+}
+
+.queue-header {
+  background: #0878d1;
+  color: white;
+  font-weight: bold;
+}
+
+.queue-item {
+  border-bottom: 1px solid #eee;
+}
+
+.queue-item:last-child {
+  border-bottom: none;
+}
+
+.status {
+  color: #0878d1;
+  font-weight: bold;
+}
+
+.empty {
+  text-align: center;
+  padding: 35px;
+  color: #777;
+}
+
+/* FOOTER */
+footer {
+  text-align: center;
+  padding: 30px;
+  background: #092b4c;
+  color: white;
+}
+
+/* RESPONSIVE */
+@media (max-width: 800px) {
+
+  header {
+    padding: 18px 5%;
+  }
+
+  nav {
+    display: none;
+  }
+
+  .hero {
+    padding: 60px 5%;
