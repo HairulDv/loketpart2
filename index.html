@@ -3,86 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistem antrean bank digital BankKu: ambil nomor, pantau panggilan, dan kelola loket Teller & Customer Service.">
+    <meta name="theme-color" content="#0b5fd1">
     <title>BankKu - Sistem Antrean</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏦%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <header>
-        <div class="logo">
-            🏦 <span>BankKu</span>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <a class="brand" href="#" aria-label="BankKu">
+                <span class="brand-mark" aria-hidden="true">B</span>
+                <span class="brand-name">BankKu</span>
+            </a>
+
+            <div class="topbar-right">
+                <span class="status-pill" id="openStatus" data-open="true">
+                    <i aria-hidden="true"></i><span id="openStatusText">Buka</span>
+                </span>
+                <div class="clock" aria-live="off">
+                    <time id="clock">00:00:00</time>
+                    <small id="date">-</small>
+                </div>
+                <button class="icon-btn" id="themeToggle" type="button" aria-label="Ganti tema">
+                    <span aria-hidden="true">🌓</span>
+                </button>
+            </div>
         </div>
-        <div class="clock" id="clock">00:00:00</div>
     </header>
 
     <main>
         <section class="hero">
-            <h1>Sistem Antrean Bank</h1>
-            <p>Silakan pilih layanan yang Anda butuhkan</p>
+            <p class="eyebrow">Layanan Antrean Digital</p>
+            <h1>Antre lebih tertib,<br>tanpa berdiri lama.</h1>
+            <p class="lead">Ambil nomor, pantau giliran Anda, dan dengarkan panggilan loket secara langsung.</p>
         </section>
 
-        <section class="queue-container">
+        <section class="stats" aria-label="Ringkasan">
+            <article class="stat">
+                <span class="stat-label">Sedang menunggu</span>
+                <strong id="totalQueue">0</strong>
+            </article>
+            <article class="stat">
+                <span class="stat-label">Sudah dilayani</span>
+                <strong id="totalServed">0</strong>
+            </article>
+            <article class="stat">
+                <span class="stat-label">Tiket hari ini</span>
+                <strong id="totalIssued">0</strong>
+            </article>
+            <article class="stat">
+                <span class="stat-label">Jam operasional</span>
+                <strong class="stat-text">08:00 – 15:00</strong>
+            </article>
+        </section>
 
-            <div class="card service-card">
-                <h2>🎫 Ambil Nomor Antrean</h2>
+        <div class="layout">
 
-                <label for="service">Pilih Layanan</label>
-                <select id="service">
-                    <option value="T">Teller</option>
-                    <option value="CS">Customer Service</option>
-                </select>
+            <!-- AMBIL TIKET -->
+            <section class="card" aria-labelledby="ticketTitle">
+                <h2 id="ticketTitle"><span class="chip">1</span> Ambil Nomor Antrean</h2>
 
-                <button class="btn primary" onclick="ambilTiket()">
-                    Ambil Tiket
-                </button>
+                <fieldset class="service-picker">
+                    <legend>Pilih layanan</legend>
 
-                <div id="ticketResult" class="ticket-result">
-                    <p>Nomor Anda</p>
-                    <strong id="ticketNumber">-</strong>
+                    <label class="service-option">
+                        <input type="radio" name="service" value="T" checked>
+                        <span class="service-body">
+                            <span class="service-icon" aria-hidden="true">💳</span>
+                            <span>
+                                <strong>Teller</strong>
+                                <small>Setor, tarik, transfer</small>
+                            </span>
+                            <em id="waitT">0 menunggu</em>
+                        </span>
+                    </label>
+
+                    <label class="service-option">
+                        <input type="radio" name="service" value="CS">
+                        <span class="service-body">
+                            <span class="service-icon" aria-hidden="true">🎧</span>
+                            <span>
+                                <strong>Customer Service</strong>
+                                <small>Buka rekening, kartu, keluhan</small>
+                            </span>
+                            <em id="waitCS">0 menunggu</em>
+                        </span>
+                    </label>
+                </fieldset>
+
+                <button class="btn primary block" id="takeBtn" type="button">Ambil Tiket</button>
+
+                <div class="ticket" id="ticketResult" hidden>
+                    <div class="ticket-head">
+                        <span>Nomor Anda</span>
+                        <span id="ticketService">-</span>
+                    </div>
+                    <strong class="ticket-number" id="ticketNumber">-</strong>
+                    <div class="ticket-foot">
+                        <span id="ticketAhead">-</span>
+                        <span id="ticketEta">-</span>
+                    </div>
+                    <div class="ticket-actions">
+                        <button class="btn ghost small" id="printBtn" type="button">🖨️ Cetak</button>
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="card display-card">
-                <h2>📢 Antrean Saat Ini</h2>
+            <!-- LOKET -->
+            <section class="card" aria-labelledby="counterTitle">
+                <h2 id="counterTitle"><span class="chip">2</span> Panel Loket</h2>
 
-                <div class="current-number" id="currentNumber">
-                    T-000
+                <div class="counters">
+
+                    <article class="counter" data-service="T">
+                        <header>
+                            <h3>Loket Teller</h3>
+                            <span class="mini-badge" id="badgeT">0 antre</span>
+                        </header>
+                        <div class="now" id="currentT" aria-live="polite">T-000</div>
+                        <p class="now-note" id="noteT">Belum ada panggilan</p>
+                        <div class="counter-actions">
+                            <button class="btn primary" data-call="T" type="button">Panggil Berikutnya</button>
+                            <button class="btn ghost" data-recall="T" type="button" aria-label="Panggil ulang Teller" title="Panggil ulang">🔁</button>
+                        </div>
+                    </article>
+
+                    <article class="counter" data-service="CS">
+                        <header>
+                            <h3>Loket Customer Service</h3>
+                            <span class="mini-badge" id="badgeCS">0 antre</span>
+                        </header>
+                        <div class="now" id="currentCS" aria-live="polite">CS-000</div>
+                        <p class="now-note" id="noteCS">Belum ada panggilan</p>
+                        <div class="counter-actions">
+                            <button class="btn primary" data-call="CS" type="button">Panggil Berikutnya</button>
+                            <button class="btn ghost" data-recall="CS" type="button" aria-label="Panggil ulang Customer Service" title="Panggil ulang">🔁</button>
+                        </div>
+                    </article>
+
                 </div>
+            </section>
 
-                <p id="currentService">Silakan menunggu panggilan</p>
+            <!-- DAFTAR TUNGGU -->
+            <section class="card" aria-labelledby="waitTitle">
+                <h2 id="waitTitle"><span class="chip">3</span> Daftar Tunggu</h2>
+                <div class="lists">
+                    <div>
+                        <h3 class="list-title">Teller</h3>
+                        <ul class="queue-list" id="listT"></ul>
+                    </div>
+                    <div>
+                        <h3 class="list-title">Customer Service</h3>
+                        <ul class="queue-list" id="listCS"></ul>
+                    </div>
+                </div>
+            </section>
 
-                <button class="btn next" onclick="panggilBerikutnya()">
-                    Panggil Berikutnya
-                </button>
-            </div>
+            <!-- RIWAYAT -->
+            <section class="card" aria-labelledby="historyTitle">
+                <h2 id="historyTitle"><span class="chip">4</span> Riwayat Panggilan</h2>
+                <ol class="history" id="history"></ol>
+            </section>
 
-        </section>
-
-        <section class="info">
-            <div>
-                <span>👥</span>
-                <h3>Total Antrean</h3>
-                <p id="totalQueue">0</p>
-            </div>
-
-            <div>
-                <span>🏦</span>
-                <h3>Layanan</h3>
-                <p>Teller & CS</p>
-            </div>
-
-            <div>
-                <span>⏰</span>
-                <h3>Jam Operasional</h3>
-                <p>08:00 - 15:00</p>
-            </div>
-        </section>
+        </div>
     </main>
 
     <footer>
-        <p>© 2026 BankKu - Sistem Ticket Antrean Bank</p>
+        <p>© 2026 BankKu · Sistem Ticket Antrean Bank</p>
+        <div class="footer-actions">
+            <button class="link-btn" id="soundToggle" type="button" aria-pressed="true">🔊 Suara aktif</button>
+            <button class="link-btn danger" id="resetBtn" type="button">Reset antrean</button>
+        </div>
     </footer>
+
+    <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+    <dialog id="confirmDialog">
+        <form method="dialog">
+            <h3>Reset semua antrean?</h3>
+            <p>Seluruh tiket, panggilan, dan riwayat hari ini akan dihapus.</p>
+            <div class="dialog-actions">
+                <button class="btn ghost" value="cancel">Batal</button>
+                <button class="btn danger" value="ok">Ya, reset</button>
+            </div>
+        </form>
+    </dialog>
 
     <script src="script.js"></script>
 </body>
-</html>l 
+</html>

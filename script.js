@@ -1,212 +1,418 @@
+"use strict";
+
 // ================================
-// DATA ANTREAN
+// KONFIGURASI
 // ================================
 
-let antrean = {
-    T: [],
-    CS: []
+const LAYANAN = {
+    T:  { nama: "Teller",           menitPerOrang: 4 },
+    CS: { nama: "Customer Service", menitPerOrang: 8 }
 };
 
-let nomorBerikutnya = {
-    T: 1,
-    CS: 1
-};
-
-let antreanDipanggil = 0;
-
+const JAM_BUKA = 8;    // 08:00
+const JAM_TUTUP = 15;  // 15:00
+const STORAGE_KEY = "bankku-antrean-v2";
+const THEME_KEY = "bankku-theme";
+const SOUND_KEY = "bankku-sound";
+const MAX_RIWAYAT = 8;
+const MAX_TAMPIL = 6;
 
 // ================================
-// JAM REALTIME
+// STATE
+// ================================
+
+function stateAwal() {
+    return {
+        hari: hariIni(),
+        berikutnya: { T: 1, CS: 1 },     // nomor tiket selanjutnya
+        antrean:    { T: [], CS: [] },   // nomor yang menunggu
+        sekarang:   { T: null, CS: null },
+        riwayat:    [],                  // { nomor, layanan, waktu }
+        diterbitkan: 0,
+        dilayani: 0
+    };
+}
+
+let state = muat();
+let suaraAktif = bacaStorage(SOUND_KEY) !== "off";
+
+function hariIni() {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+function bacaStorage(key) {
+    try { return localStorage.getItem(key); } catch { return null; }
+}
+
+function tulisStorage(key, value) {
+    try { localStorage.setItem(key, value); } catch { /* abaikan */ }
+}
+
+function muat() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return stateAwal();
+        const data = JSON.parse(raw);
+        // Antrean otomatis mulai dari nol di hari yang baru
+        if (!data || data.hari !== hariIni()) return stateAwal();
+        return { ...stateAwal(), ...data };
+    } catch {
+        return stateAwal();
+    }
+}
+
+function simpan() {
+    tulisStorage(STORAGE_KEY, JSON.stringify(state));
+}
+
+// ================================
+// UTIL
+// ================================
+
+const $ = (id) => document.getElementById(id);
+
+function formatNomor(kode, n) {
+    return `${kode}-${String(n).padStart(3, "0")}`;
+}
+
+function kodeDari(nomor) {
+    return nomor.split("-")[0];
+}
+
+function jamMenit(ts) {
+    const d = new Date(ts);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function bump(el) {
+    el.classList.remove("bump");
+    void el.offsetWidth;
+    el.classList.add("bump");
+}
+
+// ================================
+// JAM REALTIME & STATUS BUKA
 // ================================
 
 function updateClock() {
-    const clock = document.getElementById("clock");
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
 
-    if (!clock) return;
+    $("clock").textContent =
+        `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-    const sekarang = new Date();
+    $("date").textContent = now.toLocaleDateString("id-ID", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric"
+    });
 
-    const jam = String(sekarang.getHours()).padStart(2, "0");
-    const menit = String(sekarang.getMinutes()).padStart(2, "0");
-    const detik = String(sekarang.getSeconds()).padStart(2, "0");
+    const menit = now.getHours() * 60 + now.getMinutes();
+    const buka = menit >= JAM_BUKA * 60 && menit < JAM_TUTUP * 60;
+    const pill = $("openStatus");
+    pill.dataset.open = String(buka);
+    $("openStatusText").textContent = buka ? "Buka" : "Tutup";
 
-    clock.textContent = `${jam}:${menit}:${detik}`;
+    // Ganti hari saat halaman dibiarkan terbuka semalaman
+    if (state.hari !== hariIni()) {
+        state = stateAwal();
+        simpan();
+        render();
+    }
 }
 
-setInterval(updateClock, 1000);
-updateClock();
+// ================================
+// TOAST
+// ================================
 
+function toast(pesan, tipe = "info") {
+    const wadah = $("toasts");
+    const el = document.createElement("div");
+    el.className = `toast ${tipe === "error" ? "error" : ""}`;
+    el.textContent = pesan;
+    wadah.appendChild(el);
+
+    setTimeout(() => {
+        el.classList.add("out");
+        el.addEventListener("animationend", () => el.remove(), { once: true });
+    }, 3200);
+}
 
 // ================================
 // AMBIL TIKET
 // ================================
 
 function ambilTiket() {
-
-    const service = document.getElementById("service").value;
-
-    // Membuat nomor antrean
-    const nomor = nomorBerikutnya[service];
-
-    nomorBerikutnya[service]++;
-
-    // Format nomor menjadi 001, 002, 003
-    const nomorFormat = String(nomor).padStart(3, "0");
-
-    const nomorTiket = `${service}-${nomorFormat}`;
-
-    // Masukkan ke antrean
-    antrean[service].push(nomorTiket);
-
-    // Tampilkan nomor tiket
-    const ticketNumber = document.getElementById("ticketNumber");
-
-    if (ticketNumber) {
-        ticketNumber.textContent = nomorTiket;
-    }
-
-    // Tampilkan hasil tiket
-    const ticketResult = document.getElementById("ticketResult");
-
-    if (ticketResult) {
-        ticketResult.style.display = "block";
-    }
-
-    // Update jumlah antrean
-    updateTotalQueue();
-
-    // Notifikasi
-    alert(`Tiket berhasil diambil!\nNomor antrean Anda: ${nomorTiket}`);
-}
-
-
-// ================================
-// PANGGIL ANTREAN BERIKUTNYA
-// ================================
-
-function panggilBerikutnya() {
-
-    // Cek antrean Teller dan CS
-    let nomorDipanggil = null;
-    let serviceDipanggil = null;
-
-    // Prioritas Teller
-    if (antrean.T.length > 0) {
-
-        nomorDipanggil = antrean.T.shift();
-        serviceDipanggil = "Teller";
-
-    } else if (antrean.CS.length > 0) {
-
-        nomorDipanggil = antrean.CS.shift();
-        serviceDipanggil = "Customer Service";
-
-    } else {
-
-        alert("Tidak ada antrean saat ini.");
+    const dipilih = document.querySelector('input[name="service"]:checked');
+    if (!dipilih) {
+        toast("Pilih layanan terlebih dahulu.", "error");
         return;
     }
 
-    antreanDipanggil++;
+    const kode = dipilih.value;
+    const nomor = formatNomor(kode, state.berikutnya[kode]);
 
-    // Tampilkan nomor yang dipanggil
-    const currentNumber = document.getElementById("currentNumber");
-    const currentService = document.getElementById("currentService");
+    state.berikutnya[kode]++;
+    state.antrean[kode].push(nomor);
+    state.diterbitkan++;
+    simpan();
 
-    if (currentNumber) {
-        currentNumber.textContent = nomorDipanggil;
-    }
+    // Hitung sisa orang di depan dan estimasi tunggu
+    const didepan = state.antrean[kode].length - 1;
+    const estimasi = didepan * LAYANAN[kode].menitPerOrang;
 
-    if (currentService) {
-        currentService.textContent =
-            `Silakan menuju ${serviceDipanggil}`;
-    }
+    $("ticketNumber").textContent = nomor;
+    $("ticketService").textContent = LAYANAN[kode].nama;
+    $("ticketAhead").textContent =
+        didepan === 0 ? "Anda berikutnya" : `${didepan} orang di depan Anda`;
+    $("ticketEta").textContent =
+        estimasi === 0 ? "Segera dipanggil" : `± ${estimasi} menit`;
+    $("ticketResult").hidden = false;
 
-    // Update total antrean
-    updateTotalQueue();
-
-    // Suara panggilan
-    panggilDenganSuara(nomorDipanggil, serviceDipanggil);
+    render();
+    toast(`Tiket ${nomor} berhasil diambil`);
 }
 
-
 // ================================
-// HITUNG TOTAL ANTREAN
+// PANGGIL BERIKUTNYA (PER LOKET)
 // ================================
 
-function updateTotalQueue() {
-
-    const total =
-        antrean.T.length +
-        antrean.CS.length;
-
-    const totalQueue = document.getElementById("totalQueue");
-
-    if (totalQueue) {
-        totalQueue.textContent = total;
+function panggil(kode) {
+    if (!state.antrean[kode].length) {
+        toast(`Tidak ada antrean ${LAYANAN[kode].nama}.`, "error");
+        return;
     }
+
+    const nomor = state.antrean[kode].shift();
+    state.sekarang[kode] = nomor;
+    state.dilayani++;
+    state.riwayat.unshift({ nomor, layanan: kode, waktu: Date.now() });
+    state.riwayat = state.riwayat.slice(0, MAX_RIWAYAT);
+    simpan();
+
+    render();
+
+    const el = $(`current${kode}`);
+    el.classList.remove("flash");
+    void el.offsetWidth;
+    el.classList.add("flash");
+
+    suaraPanggilan(nomor, kode);
 }
 
+function panggilUlang(kode) {
+    const nomor = state.sekarang[kode];
+    if (!nomor) {
+        toast(`Belum ada nomor ${LAYANAN[kode].nama} yang dipanggil.`, "error");
+        return;
+    }
+    suaraPanggilan(nomor, kode);
+    toast(`Memanggil ulang ${nomor}`);
+}
 
 // ================================
 // SUARA PANGGILAN
 // ================================
 
-function panggilDenganSuara(nomor, layanan) {
-
-    if (!("speechSynthesis" in window)) {
-        return;
-    }
-
-    const teks =
-        `Nomor antrean ${nomor}. Silakan menuju ${layanan}.`;
-
-    const suara = new SpeechSynthesisUtterance(teks);
-
-    suara.lang = "id-ID";
-    suara.rate = 0.9;
-    suara.pitch = 1;
-
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(suara);
+function eja(nomor) {
+    // "T-007" -> "Te, nol nol tujuh" agar terdengar jelas
+    const [kode, angka] = nomor.split("-");
+    const huruf = kode === "T" ? "Te" : "Ce Es";
+    return `${huruf}, ${angka.split("").map((d) => (d === "0" ? "nol" : d)).join(" ")}`;
 }
 
+function suaraPanggilan(nomor, kode) {
+    if (!suaraAktif || !("speechSynthesis" in window)) return;
+
+    const teks = `Nomor antrean ${eja(nomor)}. Silakan menuju ${LAYANAN[kode].nama}.`;
+    const u = new SpeechSynthesisUtterance(teks);
+    u.lang = "id-ID";
+    u.rate = 0.9;
+    u.pitch = 1;
+
+    // Pilih suara bahasa Indonesia bila tersedia
+    const voice = speechSynthesis.getVoices().find((v) => v.lang.toLowerCase().startsWith("id"));
+    if (voice) u.voice = voice;
+
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+}
 
 // ================================
-// RESET ANTREAN
+// RESET
 // ================================
 
 function resetAntrean() {
-
-    antrean = {
-        T: [],
-        CS: []
-    };
-
-    nomorBerikutnya = {
-        T: 1,
-        CS: 1
-    };
-
-    antreanDipanggil = 0;
-
-    document.getElementById("currentNumber").textContent = "T-000";
-    document.getElementById("currentService").textContent =
-        "Silakan menunggu panggilan";
-
-    document.getElementById("ticketNumber").textContent = "-";
-
-    updateTotalQueue();
+    state = stateAwal();
+    simpan();
+    $("ticketResult").hidden = true;
+    render();
+    toast("Antrean telah direset");
 }
 
+// ================================
+// RENDER
+// ================================
+
+function setTeks(id, nilai) {
+    const el = $(id);
+    if (el.textContent !== String(nilai)) {
+        el.textContent = nilai;
+        if (el.tagName === "STRONG") bump(el);
+    }
+}
+
+function renderDaftar(kode) {
+    const ul = $(`list${kode}`);
+    ul.replaceChildren();
+
+    const daftar = state.antrean[kode];
+    if (!daftar.length) {
+        const li = document.createElement("li");
+        li.className = "empty";
+        li.textContent = "Tidak ada antrean";
+        ul.appendChild(li);
+        return;
+    }
+
+    daftar.slice(0, MAX_TAMPIL).forEach((nomor, i) => {
+        const li = document.createElement("li");
+        const strong = document.createElement("strong");
+        strong.textContent = nomor;
+        const span = document.createElement("span");
+        span.textContent = `± ${(i + 1) * LAYANAN[kode].menitPerOrang} mnt`;
+        li.append(strong, span);
+        ul.appendChild(li);
+    });
+
+    if (daftar.length > MAX_TAMPIL) {
+        const li = document.createElement("li");
+        li.className = "empty";
+        li.textContent = `+${daftar.length - MAX_TAMPIL} antrean lainnya`;
+        ul.appendChild(li);
+    }
+}
+
+function renderRiwayat() {
+    const ol = $("history");
+    ol.replaceChildren();
+
+    if (!state.riwayat.length) {
+        const li = document.createElement("li");
+        li.className = "empty";
+        li.textContent = "Belum ada panggilan";
+        ol.appendChild(li);
+        return;
+    }
+
+    state.riwayat.forEach((r) => {
+        const li = document.createElement("li");
+        const strong = document.createElement("strong");
+        strong.textContent = r.nomor;
+        const nama = document.createElement("span");
+        nama.textContent = `${LAYANAN[r.layanan].nama} · ${jamMenit(r.waktu)}`;
+        li.append(strong, nama);
+        ol.appendChild(li);
+    });
+}
+
+function render() {
+    const jmlT = state.antrean.T.length;
+    const jmlCS = state.antrean.CS.length;
+
+    setTeks("totalQueue", jmlT + jmlCS);
+    setTeks("totalServed", state.dilayani);
+    setTeks("totalIssued", state.diterbitkan);
+
+    $("waitT").textContent = `${jmlT} menunggu`;
+    $("waitCS").textContent = `${jmlCS} menunggu`;
+    $("badgeT").textContent = `${jmlT} antre`;
+    $("badgeCS").textContent = `${jmlCS} antre`;
+
+    for (const kode of Object.keys(LAYANAN)) {
+        const nomor = state.sekarang[kode];
+        $(`current${kode}`).textContent = nomor || `${kode}-000`;
+        $(`note${kode}`).textContent = nomor
+            ? `Silakan menuju loket ${LAYANAN[kode].nama}`
+            : "Belum ada panggilan";
+
+        const btn = document.querySelector(`[data-call="${kode}"]`);
+        btn.disabled = state.antrean[kode].length === 0;
+        document.querySelector(`[data-recall="${kode}"]`).disabled = !nomor;
+
+        renderDaftar(kode);
+    }
+
+    renderRiwayat();
+}
+
+// ================================
+// TEMA & SUARA
+// ================================
+
+function terapkanTema(tema) {
+    document.documentElement.dataset.theme = tema;
+}
+
+function toggleTema() {
+    const gelap = document.documentElement.dataset.theme === "dark" ||
+        (!document.documentElement.dataset.theme &&
+            matchMedia("(prefers-color-scheme: dark)").matches);
+    const baru = gelap ? "light" : "dark";
+    terapkanTema(baru);
+    tulisStorage(THEME_KEY, baru);
+}
+
+function renderSuara() {
+    const btn = $("soundToggle");
+    btn.textContent = suaraAktif ? "🔊 Suara aktif" : "🔇 Suara mati";
+    btn.setAttribute("aria-pressed", String(suaraAktif));
+}
 
 // ================================
 // INISIALISASI
 // ================================
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
+
+    const temaTersimpan = bacaStorage(THEME_KEY);
+    if (temaTersimpan) terapkanTema(temaTersimpan);
 
     updateClock();
-    updateTotalQueue();
+    setInterval(updateClock, 1000);
+    renderSuara();
+    render();
 
+    $("takeBtn").addEventListener("click", ambilTiket);
+    $("printBtn").addEventListener("click", () => window.print());
+    $("themeToggle").addEventListener("click", toggleTema);
+
+    document.querySelectorAll("[data-call]").forEach((b) =>
+        b.addEventListener("click", () => panggil(b.dataset.call)));
+    document.querySelectorAll("[data-recall]").forEach((b) =>
+        b.addEventListener("click", () => panggilUlang(b.dataset.recall)));
+
+    $("soundToggle").addEventListener("click", () => {
+        suaraAktif = !suaraAktif;
+        tulisStorage(SOUND_KEY, suaraAktif ? "on" : "off");
+        if (!suaraAktif && "speechSynthesis" in window) speechSynthesis.cancel();
+        renderSuara();
+    });
+
+    const dialog = $("confirmDialog");
+    $("resetBtn").addEventListener("click", () => dialog.showModal());
+    dialog.addEventListener("close", () => {
+        if (dialog.returnValue === "ok") resetAntrean();
+        dialog.returnValue = "";
+    });
+
+    // Sinkron antar tab: tab layar antrean & tab loket tetap seirama
+    window.addEventListener("storage", (e) => {
+        if (e.key === STORAGE_KEY) {
+            state = muat();
+            render();
+        }
+    });
+
+    // Beberapa browser memuat daftar suara secara asinkron
+    if ("speechSynthesis" in window) speechSynthesis.getVoices();
 });
